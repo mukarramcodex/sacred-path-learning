@@ -8,6 +8,7 @@ import About from "./pages/About";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import Teachers from "./pages/Teachers";
+import TeacherDetail from "./pages/TeacherDetail";
 import Contact from "./pages/Contact";
 import Admission from "./pages/Admission";
 import Auth from "./pages/Auth";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/teachers" element={<Teachers />} />
+          <Route path="/teachers/:id" element={<TeacherDetail />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admission" element={<Admission />} />
           <Route path="/auth" element={<Auth />} />
