@@ -36,6 +36,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { CourseEnrollmentForm } from "@/components/course/CourseEnrollmentForm";
+import { VideoPreviewModal } from "@/components/course/VideoPreviewModal";
 
 // Course data - in production this would come from database
 const coursesData = [
@@ -211,6 +212,7 @@ const relatedCourses = [
 const CourseDetail = () => {
   const { id } = useParams();
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   
   // In production, fetch course data based on ID
   const course = coursesData[0]; // Using first course as demo
@@ -333,10 +335,11 @@ const CourseDetail = () => {
               <div className="card-elevated overflow-hidden">
                 {/* Course Preview Image */}
                 <div
+                  onClick={() => setIsVideoModalOpen(true)}
                   className={`aspect-video bg-gradient-to-br ${course.image} flex items-center justify-center relative group cursor-pointer`}
                 >
                   <div className="absolute inset-0 bg-foreground/40 group-hover:bg-foreground/50 transition-colors"></div>
-                  <div className="relative z-10 w-16 h-16 rounded-full bg-primary-foreground flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="relative z-10 w-16 h-16 rounded-full bg-primary-foreground flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                     <Play className="w-8 h-8 text-primary ml-1" />
                   </div>
                   <span className="absolute bottom-4 left-4 text-primary-foreground text-sm font-medium z-10">
@@ -847,6 +850,14 @@ const CourseDetail = () => {
           </Link>
         </div>
       </div>
+
+      {/* Video Preview Modal */}
+      <VideoPreviewModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        courseTitle={course.title}
+        curriculum={course.curriculum}
+      />
     </Layout>
   );
 };
