@@ -107,6 +107,83 @@ export type Database = {
         }
         Relationships: []
       }
+      courses: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          duration_hours: number | null
+          id: string
+          is_featured: boolean | null
+          is_published: boolean | null
+          level: string
+          original_price: number | null
+          preview_video_url: string | null
+          price: number | null
+          rating: number | null
+          short_description: string | null
+          teacher_id: string | null
+          thumbnail_url: string | null
+          title: string
+          total_lessons: number | null
+          total_reviews: number | null
+          total_students: number | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          level?: string
+          original_price?: number | null
+          preview_video_url?: string | null
+          price?: number | null
+          rating?: number | null
+          short_description?: string | null
+          teacher_id?: string | null
+          thumbnail_url?: string | null
+          title: string
+          total_lessons?: number | null
+          total_reviews?: number | null
+          total_students?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          level?: string
+          original_price?: number | null
+          preview_video_url?: string | null
+          price?: number | null
+          rating?: number | null
+          short_description?: string | null
+          teacher_id?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          total_lessons?: number | null
+          total_reviews?: number | null
+          total_students?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string
@@ -167,6 +244,57 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      teachers: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          email: string | null
+          experience_years: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          rating: number | null
+          specialization: string
+          title: string
+          total_students: number | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          experience_years?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          rating?: number | null
+          specialization: string
+          title: string
+          total_students?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          experience_years?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          specialization?: string
+          title?: string
+          total_students?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
