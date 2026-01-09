@@ -13,6 +13,11 @@ import Contact from "./pages/Contact";
 import Admission from "./pages/Admission";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminCourses from "./pages/admin/AdminCourses";
+import AdminTeachers from "./pages/admin/AdminTeachers";
+import AdminAdmissions from "./pages/admin/AdminAdmissions";
+import AdminContacts from "./pages/admin/AdminContacts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +39,11 @@ const App = () => (
           <Route path="/admission" element={<Admission />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/courses" element={<AdminCourses />} />
+          <Route path="/admin/teachers" element={<AdminTeachers />} />
+          <Route path="/admin/admissions" element={<AdminAdmissions />} />
+          <Route path="/admin/contacts" element={<AdminContacts />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
