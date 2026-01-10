@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ImageUpload from '@/components/admin/ImageUpload';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ interface Course {
   is_published: boolean;
   is_featured: boolean;
   teacher_id: string | null;
+  thumbnail_url: string | null;
 }
 
 interface Teacher {
@@ -54,6 +56,7 @@ const AdminCourses = () => {
     teacher_id: '',
     is_published: false,
     is_featured: false,
+    thumbnail_url: '',
   });
 
   const fetchCourses = async () => {
@@ -92,6 +95,7 @@ const AdminCourses = () => {
         ...formData,
         teacher_id: formData.teacher_id || null,
         original_price: formData.original_price || null,
+        thumbnail_url: formData.thumbnail_url || null,
       };
 
       if (editingCourse) {
@@ -162,6 +166,7 @@ const AdminCourses = () => {
       teacher_id: '',
       is_published: false,
       is_featured: false,
+      thumbnail_url: '',
     });
   };
 
@@ -180,6 +185,7 @@ const AdminCourses = () => {
       teacher_id: course.teacher_id || '',
       is_published: course.is_published,
       is_featured: course.is_featured,
+      thumbnail_url: course.thumbnail_url || '',
     });
     setIsDialogOpen(true);
   };
@@ -223,6 +229,17 @@ const AdminCourses = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <Label>Thumbnail</Label>
+                    <ImageUpload
+                      bucket="course-thumbnails"
+                      currentUrl={formData.thumbnail_url || undefined}
+                      onUpload={(url) => setFormData({ ...formData, thumbnail_url: url })}
+                      onRemove={() => setFormData({ ...formData, thumbnail_url: '' })}
+                      aspectRatio="video"
+                      className="max-w-[300px]"
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="title">Title</Label>
                     <Input

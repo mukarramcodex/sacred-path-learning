@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ImageUpload from '@/components/admin/ImageUpload';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -245,12 +246,13 @@ const AdminTeachers = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Label htmlFor="avatar_url">Avatar URL</Label>
-                    <Input
-                      id="avatar_url"
-                      value={formData.avatar_url}
-                      onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
-                      placeholder="https://..."
+                    <Label>Avatar</Label>
+                    <ImageUpload
+                      bucket="teacher-avatars"
+                      currentUrl={formData.avatar_url || undefined}
+                      onUpload={(url) => setFormData({ ...formData, avatar_url: url })}
+                      onRemove={() => setFormData({ ...formData, avatar_url: '' })}
+                      className="max-w-[200px]"
                     />
                   </div>
                   <div className="md:col-span-2">
