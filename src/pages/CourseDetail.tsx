@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import DOMPurify from "dompurify";
 import { Layout } from "@/components/layout/Layout";
 import { motion } from "framer-motion";
 import {
@@ -484,7 +485,7 @@ const CourseDetail = () => {
                         <p>{course.description}</p>
                         <div
                           dangerouslySetInnerHTML={{
-                            __html: course.longDescription,
+                            __html: DOMPurify.sanitize(course.longDescription),
                           }}
                         />
                       </div>
