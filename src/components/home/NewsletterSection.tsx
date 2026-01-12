@@ -4,6 +4,7 @@ import { Send, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const NewsletterSection = () => {
   const [email, setEmail] = useState("");
@@ -18,15 +19,37 @@ export const NewsletterSection = () => {
       return;
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsLoading(false);
-    setIsSubscribed(true);
-    setEmail("");
-    toast.success("Successfully subscribed to our newsletter!");
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({ email });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error("You're already subscribed to our newsletter!");
+        } else {
+          throw error;
+        }
+      } else {
+        setIsSubscribed(true);
+        setEmail("");
+        toast.success("Successfully subscribed to our newsletter!");
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      toast.error("Failed to subscribe. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
