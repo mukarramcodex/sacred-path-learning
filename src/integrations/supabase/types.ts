@@ -184,6 +184,45 @@ export type Database = {
           },
         ]
       }
+      newsletter_campaigns: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          sent_at: string
+          status: string
+          subject: string
+          total_clicks: number
+          total_opens: number
+          total_recipients: number
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          sent_at?: string
+          status?: string
+          subject: string
+          total_clicks?: number
+          total_opens?: number
+          total_recipients?: number
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          sent_at?: string
+          status?: string
+          subject?: string
+          total_clicks?: number
+          total_opens?: number
+          total_recipients?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string
@@ -204,6 +243,41 @@ export type Database = {
           is_active?: boolean
         }
         Relationships: []
+      }
+      newsletter_tracking: {
+        Row: {
+          campaign_id: string
+          clicked_at: string | null
+          created_at: string
+          id: string
+          opened_at: string | null
+          subscriber_email: string
+        }
+        Insert: {
+          campaign_id: string
+          clicked_at?: string | null
+          created_at?: string
+          id?: string
+          opened_at?: string | null
+          subscriber_email: string
+        }
+        Update: {
+          campaign_id?: string
+          clicked_at?: string | null
+          created_at?: string
+          id?: string
+          opened_at?: string | null
+          subscriber_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_tracking_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
