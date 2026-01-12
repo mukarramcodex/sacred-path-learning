@@ -16,6 +16,21 @@ interface NewsletterRequest {
   textContent?: string;
 }
 
+// Add tracking pixel to email content
+function addTrackingToEmail(
+  htmlContent: string,
+  trackingId: string,
+  supabaseUrl: string
+): string {
+  const trackingPixel = `<img src="${supabaseUrl}/functions/v1/track-email?t=${trackingId}&type=open" width="1" height="1" style="display:none;" alt="" />`;
+  
+  // Add tracking pixel before closing body tag or at the end
+  if (htmlContent.includes("</body>")) {
+    return htmlContent.replace("</body>", `${trackingPixel}</body>`);
+  }
+  return htmlContent + trackingPixel;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -94,39 +109,94 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emails = subscribers.map((s) => s.email);
 
-    // Send emails in batches (Resend recommends max 100 per request)
-    const batchSize = 50;
+    // Create service role client for campaign tracking
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Create campaign record
+    const { data: campaign, error: campaignError } = await supabaseAdmin
+      .from("newsletter_campaigns")
+      .insert({
+        subject,
+        content: htmlContent,
+        total_recipients: emails.length,
+        status: "sending",
+      })
+      .select()
+      .single();
+
+    if (campaignError || !campaign) {
+      console.error("Error creating campaign:", campaignError);
+      return new Response(
+        JSON.stringify({ error: "Failed to create campaign record" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Create tracking records for each subscriber
+    const trackingRecords = emails.map((email) => ({
+      campaign_id: campaign.id,
+      subscriber_email: email,
+    }));
+
+    const { data: trackingData, error: trackingError } = await supabaseAdmin
+      .from("newsletter_tracking")
+      .insert(trackingRecords)
+      .select();
+
+    if (trackingError) {
+      console.error("Error creating tracking records:", trackingError);
+    }
+
+    // Map email to tracking ID
+    const emailToTrackingId: Record<string, string> = {};
+    if (trackingData) {
+      trackingData.forEach((t) => {
+        emailToTrackingId[t.subscriber_email] = t.id;
+      });
+    }
+
+    // Send individual emails with tracking
     const results = [];
-    
-    for (let i = 0; i < emails.length; i += batchSize) {
-      const batch = emails.slice(i, i + batchSize);
-      
+    let successCount = 0;
+
+    for (const email of emails) {
+      const trackingId = emailToTrackingId[email];
+      const trackedContent = trackingId
+        ? addTrackingToEmail(htmlContent, trackingId, supabaseUrl)
+        : htmlContent;
+
       try {
         const emailResponse = await resend.emails.send({
           from: "Newsletter <onboarding@resend.dev>",
-          to: batch,
+          to: [email],
           subject: subject,
-          html: htmlContent,
+          html: trackedContent,
           text: textContent || undefined,
         });
-        
-        results.push({ batch: i / batchSize + 1, success: true, response: emailResponse });
-      } catch (batchError: any) {
-        console.error(`Error sending batch ${i / batchSize + 1}:`, batchError);
-        results.push({ batch: i / batchSize + 1, success: false, error: batchError.message });
+
+        results.push({ email, success: true, response: emailResponse });
+        successCount++;
+      } catch (emailError: any) {
+        console.error(`Error sending to ${email}:`, emailError);
+        results.push({ email, success: false, error: emailError.message });
       }
     }
 
-    const successCount = results.filter((r) => r.success).length;
-    const totalBatches = results.length;
+    // Update campaign status
+    await supabaseAdmin
+      .from("newsletter_campaigns")
+      .update({ status: "sent" })
+      .eq("id", campaign.id);
 
-    console.log(`Newsletter sent: ${successCount}/${totalBatches} batches successful, ${emails.length} total subscribers`);
+    console.log(`Newsletter sent: ${successCount}/${emails.length} emails successful`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Newsletter sent to ${emails.length} subscribers`,
-        details: results,
+        message: `Newsletter sent to ${successCount} of ${emails.length} subscribers`,
+        campaignId: campaign.id,
+        details: { successCount, totalRecipients: emails.length },
       }),
       {
         status: 200,
