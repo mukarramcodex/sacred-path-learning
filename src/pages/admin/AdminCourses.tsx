@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ImageUpload from '@/components/admin/ImageUpload';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { courseSchema, validateFormData } from '@/lib/validation';
 
 interface Course {
   id: string;
@@ -27,6 +29,7 @@ interface Course {
   is_published: boolean;
   is_featured: boolean;
   teacher_id: string | null;
+  thumbnail_url: string | null;
 }
 
 interface Teacher {
@@ -54,6 +57,7 @@ const AdminCourses = () => {
     teacher_id: '',
     is_published: false,
     is_featured: false,
+    thumbnail_url: '',
   });
 
   const fetchCourses = async () => {
@@ -87,11 +91,38 @@ const AdminCourses = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prepare data for validation
+    const dataToValidate = {
+      ...formData,
+      teacher_id: formData.teacher_id || null,
+      original_price: formData.original_price || null,
+      thumbnail_url: formData.thumbnail_url || null,
+      description: formData.description || null,
+      short_description: formData.short_description || null,
+    };
+
+    // Validate form data
+    const validation = validateFormData(courseSchema, dataToValidate);
+    if (!validation.success) {
+      validation.errors.forEach(err => toast.error(err));
+      return;
+    }
+
     try {
       const courseData = {
-        ...formData,
-        teacher_id: formData.teacher_id || null,
-        original_price: formData.original_price || null,
+        title: validation.data.title,
+        description: validation.data.description,
+        short_description: validation.data.short_description,
+        category: validation.data.category,
+        level: validation.data.level,
+        price: validation.data.price,
+        original_price: validation.data.original_price,
+        duration_hours: validation.data.duration_hours,
+        total_lessons: validation.data.total_lessons,
+        teacher_id: validation.data.teacher_id,
+        is_published: validation.data.is_published,
+        is_featured: validation.data.is_featured,
+        thumbnail_url: validation.data.thumbnail_url,
       };
 
       if (editingCourse) {
@@ -162,6 +193,7 @@ const AdminCourses = () => {
       teacher_id: '',
       is_published: false,
       is_featured: false,
+      thumbnail_url: '',
     });
   };
 
@@ -180,6 +212,7 @@ const AdminCourses = () => {
       teacher_id: course.teacher_id || '',
       is_published: course.is_published,
       is_featured: course.is_featured,
+      thumbnail_url: course.thumbnail_url || '',
     });
     setIsDialogOpen(true);
   };
@@ -223,6 +256,17 @@ const AdminCourses = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <Label>Thumbnail</Label>
+                    <ImageUpload
+                      bucket="course-thumbnails"
+                      currentUrl={formData.thumbnail_url || undefined}
+                      onUpload={(url) => setFormData({ ...formData, thumbnail_url: url })}
+                      onRemove={() => setFormData({ ...formData, thumbnail_url: '' })}
+                      aspectRatio="video"
+                      className="max-w-[300px]"
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="title">Title</Label>
                     <Input
