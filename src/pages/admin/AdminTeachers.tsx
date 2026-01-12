@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { teacherSchema, validateFormData } from '@/lib/validation';
 
 interface Teacher {
   id: string;
@@ -73,13 +74,33 @@ const AdminTeachers = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prepare data for validation
+    const dataToValidate = {
+      ...formData,
+      avatar_url: formData.avatar_url || null,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      bio: formData.bio || null,
+    };
+
+    // Validate form data
+    const validation = validateFormData(teacherSchema, dataToValidate);
+    if (!validation.success) {
+      validation.errors.forEach(err => toast.error(err));
+      return;
+    }
+
     try {
       const teacherData = {
-        ...formData,
-        avatar_url: formData.avatar_url || null,
-        email: formData.email || null,
-        phone: formData.phone || null,
-        bio: formData.bio || null,
+        name: validation.data.name,
+        title: validation.data.title,
+        specialization: validation.data.specialization,
+        bio: validation.data.bio,
+        avatar_url: validation.data.avatar_url,
+        email: validation.data.email,
+        phone: validation.data.phone,
+        experience_years: validation.data.experience_years,
+        is_active: validation.data.is_active,
       };
 
       if (editingTeacher) {
