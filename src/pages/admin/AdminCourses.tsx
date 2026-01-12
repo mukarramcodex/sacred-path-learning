@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { courseSchema, validateFormData } from '@/lib/validation';
 
 interface Course {
   id: string;
@@ -90,12 +91,38 @@ const AdminCourses = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prepare data for validation
+    const dataToValidate = {
+      ...formData,
+      teacher_id: formData.teacher_id || null,
+      original_price: formData.original_price || null,
+      thumbnail_url: formData.thumbnail_url || null,
+      description: formData.description || null,
+      short_description: formData.short_description || null,
+    };
+
+    // Validate form data
+    const validation = validateFormData(courseSchema, dataToValidate);
+    if (!validation.success) {
+      validation.errors.forEach(err => toast.error(err));
+      return;
+    }
+
     try {
       const courseData = {
-        ...formData,
-        teacher_id: formData.teacher_id || null,
-        original_price: formData.original_price || null,
-        thumbnail_url: formData.thumbnail_url || null,
+        title: validation.data.title,
+        description: validation.data.description,
+        short_description: validation.data.short_description,
+        category: validation.data.category,
+        level: validation.data.level,
+        price: validation.data.price,
+        original_price: validation.data.original_price,
+        duration_hours: validation.data.duration_hours,
+        total_lessons: validation.data.total_lessons,
+        teacher_id: validation.data.teacher_id,
+        is_published: validation.data.is_published,
+        is_featured: validation.data.is_featured,
+        thumbnail_url: validation.data.thumbnail_url,
       };
 
       if (editingCourse) {

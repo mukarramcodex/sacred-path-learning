@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { admissionStatusSchema, validateFormData } from '@/lib/validation';
 
 interface Admission {
   id: string;
@@ -65,10 +66,17 @@ const AdminAdmissions = () => {
   }, [isAdmin, statusFilter]);
 
   const updateStatus = async (id: string, status: string) => {
+    // Validate status value
+    const validation = validateFormData(admissionStatusSchema, { status });
+    if (!validation.success) {
+      validation.errors.forEach(err => toast.error(err));
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('admissions')
-        .update({ status })
+        .update({ status: validation.data.status })
         .eq('id', id);
 
       if (error) throw error;
