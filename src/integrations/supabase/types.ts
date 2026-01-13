@@ -405,6 +405,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_campaign_clicks: {
+        Args: { campaign_uuid: string }
+        Returns: undefined
+      }
+      increment_campaign_opens: {
+        Args: { campaign_uuid: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "teacher" | "student"
