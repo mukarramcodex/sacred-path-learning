@@ -182,6 +182,13 @@ export type Database = {
             referencedRelation: "teachers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "courses_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       newsletter_campaigns: {
@@ -395,7 +402,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      teachers_public: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          experience_years: number | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          rating: number | null
+          specialization: string | null
+          title: string | null
+          total_students: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          rating?: number | null
+          specialization?: string | null
+          title?: string | null
+          total_students?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          rating?: number | null
+          specialization?: string | null
+          title?: string | null
+          total_students?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
