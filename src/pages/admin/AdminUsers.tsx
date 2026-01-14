@@ -33,6 +33,7 @@ const AdminUsers = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     admins: 0,
@@ -135,6 +136,40 @@ const AdminUsers = () => {
         return <UsersIcon className="h-3 w-3" />;
       default:
         return <GraduationCap className="h-3 w-3" />;
+    }
+  };
+
+  const handleRoleChange = async (userId: string, newRole: AppRole) => {
+    setUpdatingUserId(userId);
+    try {
+      // Delete existing roles for the user
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert the new role
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+
+      if (insertError) throw insertError;
+
+      // Update local state
+      setUsers(prev => prev.map(user => 
+        user.user_id === userId 
+          ? { ...user, roles: [newRole] } 
+          : user
+      ));
+
+      toast.success(`Role updated to ${newRole}`);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Failed to update role');
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
@@ -281,17 +316,52 @@ const AdminUsers = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {user.roles.map((role) => (
-                        <Badge 
-                          key={role} 
-                          variant={getRoleBadgeVariant(role)}
-                          className="flex items-center gap-1"
-                        >
-                          {getRoleIcon(role)}
-                          {role}
-                        </Badge>
-                      ))}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        {user.roles.map((role) => (
+                          <Badge 
+                            key={role} 
+                            variant={getRoleBadgeVariant(role)}
+                            className="flex items-center gap-1"
+                          >
+                            {getRoleIcon(role)}
+                            {role}
+                          </Badge>
+                        ))}
+                      </div>
+                      <Select
+                        value={user.roles[0] || 'student'}
+                        onValueChange={(value) => handleRoleChange(user.user_id, value as AppRole)}
+                        disabled={updatingUserId === user.user_id}
+                      >
+                        <SelectTrigger className="w-[130px]">
+                          {updatingUserId === user.user_id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <SelectValue placeholder="Change role" />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-3 w-3" />
+                              Admin
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="teacher">
+                            <div className="flex items-center gap-2">
+                              <UsersIcon className="h-3 w-3" />
+                              Teacher
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="student">
+                            <div className="flex items-center gap-2">
+                              <GraduationCap className="h-3 w-3" />
+                              Student
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 ))}
