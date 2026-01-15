@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Shield, GraduationCap, Users as UsersIcon, Loader2 } from 'lucide-react';
+import { Search, Shield, GraduationCap, Users as UsersIcon, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -9,6 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
@@ -139,7 +142,12 @@ const AdminUsers = () => {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: AppRole) => {
+  const handleRolesChange = async (userId: string, newRoles: AppRole[]) => {
+    if (newRoles.length === 0) {
+      toast.error('User must have at least one role');
+      return;
+    }
+
     setUpdatingUserId(userId);
     try {
       // Delete existing roles for the user
@@ -150,27 +158,35 @@ const AdminUsers = () => {
 
       if (deleteError) throw deleteError;
 
-      // Insert the new role
+      // Insert all new roles
+      const rolesToInsert = newRoles.map(role => ({ user_id: userId, role }));
       const { error: insertError } = await supabase
         .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
+        .insert(rolesToInsert);
 
       if (insertError) throw insertError;
 
       // Update local state
       setUsers(prev => prev.map(user => 
         user.user_id === userId 
-          ? { ...user, roles: [newRole] } 
+          ? { ...user, roles: newRoles } 
           : user
       ));
 
-      toast.success(`Role updated to ${newRole}`);
+      toast.success(`Roles updated: ${newRoles.join(', ')}`);
     } catch (error) {
-      console.error('Error updating role:', error);
-      toast.error('Failed to update role');
+      console.error('Error updating roles:', error);
+      toast.error('Failed to update roles');
     } finally {
       setUpdatingUserId(null);
     }
+  };
+
+  const toggleRole = (userId: string, currentRoles: string[], role: AppRole) => {
+    const newRoles = currentRoles.includes(role)
+      ? currentRoles.filter(r => r !== role) as AppRole[]
+      : [...currentRoles, role] as AppRole[];
+    handleRolesChange(userId, newRoles);
   };
 
   if (authLoading) {
@@ -317,7 +333,7 @@ const AdminUsers = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {user.roles.map((role) => (
                           <Badge 
                             key={role} 
@@ -329,39 +345,45 @@ const AdminUsers = () => {
                           </Badge>
                         ))}
                       </div>
-                      <Select
-                        value={user.roles[0] || 'student'}
-                        onValueChange={(value) => handleRoleChange(user.user_id, value as AppRole)}
-                        disabled={updatingUserId === user.user_id}
-                      >
-                        <SelectTrigger className="w-[130px]">
-                          {updatingUserId === user.user_id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <SelectValue placeholder="Change role" />
-                          )}
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-3 w-3" />
-                              Admin
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="teacher">
-                            <div className="flex items-center gap-2">
-                              <UsersIcon className="h-3 w-3" />
-                              Teacher
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="student">
-                            <div className="flex items-center gap-2">
-                              <GraduationCap className="h-3 w-3" />
-                              Student
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={updatingUserId === user.user_id}
+                            className="w-[130px]"
+                          >
+                            {updatingUserId === user.user_id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'Edit Roles'
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="end">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-muted-foreground px-2 py-1">
+                              Assign Roles
+                            </p>
+                            {(['admin', 'teacher', 'student'] as AppRole[]).map((role) => (
+                              <div
+                                key={role}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
+                                onClick={() => toggleRole(user.user_id, user.roles, role)}
+                              >
+                                <Checkbox 
+                                  checked={user.roles.includes(role)}
+                                  onCheckedChange={() => toggleRole(user.user_id, user.roles, role)}
+                                />
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon(role)}
+                                  <span className="capitalize">{role}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 ))}
