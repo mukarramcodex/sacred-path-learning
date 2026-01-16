@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Shield, GraduationCap, Users as UsersIcon, Loader2, Check } from 'lucide-react';
+import { Search, Shield, GraduationCap, Users as UsersIcon, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -12,6 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
@@ -29,14 +39,22 @@ interface UserProfile {
   roles: string[];
 }
 
+interface PendingRoleChange {
+  userId: string;
+  userName: string;
+  currentRoles: string[];
+  newRoles: AppRole[];
+}
+
 const AdminUsers = () => {
-  const { isAdmin, isLoading: authLoading } = useAdminAuth();
+  const { isAdmin, isLoading: authLoading, userId: currentUserId } = useAdminAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [pendingRoleChange, setPendingRoleChange] = useState<PendingRoleChange | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     admins: 0,
@@ -142,12 +160,20 @@ const AdminUsers = () => {
     }
   };
 
-  const handleRolesChange = async (userId: string, newRoles: AppRole[]) => {
-    if (newRoles.length === 0) {
-      toast.error('User must have at least one role');
-      return;
+  const logActivity = async (action: string, targetUserId: string, details: object) => {
+    try {
+      await supabase.from('activity_logs').insert([{
+        user_id: currentUserId!,
+        action,
+        target_user_id: targetUserId,
+        details: details as any,
+      }]);
+    } catch (error) {
+      console.error('Error logging activity:', error);
     }
+  };
 
+  const executeRoleChange = async (userId: string, newRoles: AppRole[], oldRoles: string[]) => {
     setUpdatingUserId(userId);
     try {
       // Delete existing roles for the user
@@ -166,6 +192,14 @@ const AdminUsers = () => {
 
       if (insertError) throw insertError;
 
+      // Log the activity
+      const targetUser = users.find(u => u.user_id === userId);
+      await logActivity('role_change', userId, {
+        target_user_name: targetUser?.full_name || 'Unknown',
+        old_roles: oldRoles,
+        new_roles: newRoles,
+      });
+
       // Update local state
       setUsers(prev => prev.map(user => 
         user.user_id === userId 
@@ -182,11 +216,40 @@ const AdminUsers = () => {
     }
   };
 
+  const handleRoleChangeRequest = (userId: string, userName: string, currentRoles: string[], newRoles: AppRole[]) => {
+    if (newRoles.length === 0) {
+      toast.error('User must have at least one role');
+      return;
+    }
+
+    // Check if roles actually changed
+    const rolesChanged = 
+      newRoles.length !== currentRoles.length || 
+      !newRoles.every(role => currentRoles.includes(role));
+    
+    if (!rolesChanged) return;
+
+    setPendingRoleChange({ userId, userName, currentRoles, newRoles });
+  };
+
+  const confirmRoleChange = () => {
+    if (pendingRoleChange) {
+      executeRoleChange(
+        pendingRoleChange.userId, 
+        pendingRoleChange.newRoles, 
+        pendingRoleChange.currentRoles
+      );
+      setPendingRoleChange(null);
+    }
+  };
+
   const toggleRole = (userId: string, currentRoles: string[], role: AppRole) => {
     const newRoles = currentRoles.includes(role)
       ? currentRoles.filter(r => r !== role) as AppRole[]
       : [...currentRoles, role] as AppRole[];
-    handleRolesChange(userId, newRoles);
+    
+    const user = users.find(u => u.user_id === userId);
+    handleRoleChangeRequest(userId, user?.full_name || 'Unknown', currentRoles, newRoles);
   };
 
   if (authLoading) {
@@ -392,6 +455,46 @@ const AdminUsers = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!pendingRoleChange} onOpenChange={() => setPendingRoleChange(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                You are about to change roles for <strong>{pendingRoleChange?.userName}</strong>
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-sm text-muted-foreground">From:</span>
+                <div className="flex gap-1">
+                  {pendingRoleChange?.currentRoles.map(role => (
+                    <Badge key={role} variant={getRoleBadgeVariant(role)} className="capitalize">
+                      {role}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">To:</span>
+                <div className="flex gap-1">
+                  {pendingRoleChange?.newRoles.map(role => (
+                    <Badge key={role} variant={getRoleBadgeVariant(role)} className="capitalize">
+                      {role}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRoleChange}>
+              Confirm Change
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };
