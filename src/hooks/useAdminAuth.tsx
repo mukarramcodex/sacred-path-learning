@@ -62,5 +62,5 @@ export const useAdminAuth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  return { isAdmin, isLoading, user };
+  return { isAdmin, isLoading, user, userId: user?.id || null };
 };
