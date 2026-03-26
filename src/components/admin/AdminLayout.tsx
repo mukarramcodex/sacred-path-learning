@@ -11,7 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  UsersRound
+  UsersRound,
+  Newspaper
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +30,7 @@ const navItems = [
   { path: '/admin/teachers', label: 'Teachers', icon: Users },
   { path: '/admin/admissions', label: 'Admissions', icon: UserCheck },
   { path: '/admin/contacts', label: 'Contacts', icon: Mail },
+  { path: '/admin/newsletter', label: 'Newsletter', icon: Newspaper },
   { path: '/admin/users', label: 'Users', icon: UsersRound },
 ];
 

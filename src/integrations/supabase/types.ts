@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admissions: {
         Row: {
           age: number
@@ -182,7 +209,53 @@ export type Database = {
             referencedRelation: "teachers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "courses_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_public"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      newsletter_campaigns: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          sent_at: string
+          status: string
+          subject: string
+          total_clicks: number
+          total_opens: number
+          total_recipients: number
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          sent_at?: string
+          status?: string
+          subject: string
+          total_clicks?: number
+          total_opens?: number
+          total_recipients?: number
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          sent_at?: string
+          status?: string
+          subject?: string
+          total_clicks?: number
+          total_opens?: number
+          total_recipients?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       newsletter_subscribers: {
         Row: {
@@ -204,6 +277,41 @@ export type Database = {
           is_active?: boolean
         }
         Relationships: []
+      }
+      newsletter_tracking: {
+        Row: {
+          campaign_id: string
+          clicked_at: string | null
+          created_at: string
+          id: string
+          opened_at: string | null
+          subscriber_email: string
+        }
+        Insert: {
+          campaign_id: string
+          clicked_at?: string | null
+          created_at?: string
+          id?: string
+          opened_at?: string | null
+          subscriber_email: string
+        }
+        Update: {
+          campaign_id?: string
+          clicked_at?: string | null
+          created_at?: string
+          id?: string
+          opened_at?: string | null
+          subscriber_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_tracking_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -321,7 +429,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      teachers_public: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          experience_years: number | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          rating: number | null
+          specialization: string | null
+          title: string | null
+          total_students: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          rating?: number | null
+          specialization?: string | null
+          title?: string | null
+          total_students?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          rating?: number | null
+          specialization?: string | null
+          title?: string | null
+          total_students?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -330,6 +482,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_campaign_clicks: {
+        Args: { campaign_uuid: string }
+        Returns: undefined
+      }
+      increment_campaign_opens: {
+        Args: { campaign_uuid: string }
+        Returns: undefined
       }
     }
     Enums: {
